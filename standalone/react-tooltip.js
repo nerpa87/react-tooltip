@@ -371,7 +371,7 @@ var ReactTooltip = (0, _staticMethods2.default)(_class = (0, _windowListener2.de
   function ReactTooltip(props) {
     _classCallCheck(this, ReactTooltip);
 
-    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ReactTooltip).call(this, props));
+    var _this = _possibleConstructorReturn(this, (ReactTooltip.__proto__ || Object.getPrototypeOf(ReactTooltip)).call(this, props));
 
     _this.state = {
       place: 'top', // Direction of tooltip
@@ -914,7 +914,7 @@ exports.default = function (e, target, node, place, effect, offset, countTransfo
   var windowWidth = window.innerWidth;
   var windowHeight = window.innerHeight;
 
-  var _ref = countTransform && getParent(target, countTransform) || { parentTop: 0, parentLeft: 0 };
+  var _ref = countTransform && getParent(node, countTransform) || { parentTop: 0, parentLeft: 0 };
 
   var parentTop = _ref.parentTop;
   var parentLeft = _ref.parentLeft;
