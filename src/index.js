@@ -204,26 +204,19 @@ class ReactTooltip extends Component {
     target.removeEventListener('mouseleave', this.hideTooltip)
   }
 
-  /**
-   * When mouse enter, show the tooltip
-   */
-  showTooltip (e, isGlobalCall) {
-    const disabled = e.currentTarget.getAttribute('data-tip-disable')
+  isTooltipDisabled (e) {
+    return e.currentTarget.getAttribute('data-tip-disable')
       ? e.currentTarget.getAttribute('data-tip-disable') === 'true'
       : (this.props.disable || false)
-    if (disabled) return
+  }
 
-    if (isGlobalCall) {
-      // Don't trigger other elements belongs to other ReactTooltip
-      const targetArray = this.getTargetArray(this.props.id)
-      const isMyElement = targetArray.some(ele => ele === e.currentTarget)
-      if (!isMyElement || this.state.show) return
-    }
+  getTooltipPlaceholder (e) {
     // Get the tooltip content
     // calculate in this phrase so that tip width height can be detected
     const {children, multiline, getContent} = this.props
-    const originTooltip = e.currentTarget.getAttribute('data-tip')
-    const isMultiline = e.currentTarget.getAttribute('data-multiline') || multiline || false
+    const target = e.currentTarget || e.target
+    const originTooltip = target.getAttribute('data-tip')
+    const isMultiline = target.getAttribute('data-multiline') || multiline || false
 
     // Generate tootlip content
     let content = children
@@ -234,7 +227,23 @@ class ReactTooltip extends Component {
         content = getContent()
       }
     }
-    const placeholder = getTipContent(originTooltip, content, isMultiline)
+    return getTipContent(originTooltip, content, isMultiline)
+  }
+
+  /**
+   * When mouse enter, show the tooltip
+   */
+  showTooltip (e, isGlobalCall) {
+    if (this.isTooltipDisabled(e)) return
+
+    if (isGlobalCall) {
+      // Don't trigger other elements belongs to other ReactTooltip
+      const targetArray = this.getTargetArray(this.props.id)
+      const isMyElement = targetArray.some(ele => ele === e.currentTarget)
+      if (!isMyElement) return
+    }
+
+    const placeholder = this.getTooltipPlaceholder(e)
 
     // If it is focus event or called by ReactTooltip.show, switch to `solid` effect
     const switchToSolid = e instanceof window.FocusEvent || isGlobalCall
@@ -269,11 +278,11 @@ class ReactTooltip extends Component {
       if (scrollHide) this.addScrollListener(e)
       this.updateTooltip(e)
 
+      const {getContent} = this.props
       if (getContent && Array.isArray(getContent)) {
         this.intervalUpdateContent = setInterval(() => {
           if (this.mount) {
-            const {getContent} = this.props
-            const placeholder = getTipContent(originTooltip, getContent[0](), isMultiline)
+            const placeholder = this.getTooltipPlaceholder(e)
             this.setState({
               placeholder
             })
@@ -287,14 +296,17 @@ class ReactTooltip extends Component {
    * When mouse hover, updatetooltip
    */
   updateTooltip (e) {
+    if (this.isTooltipDisabled(e)) return
+
     const {delayShow, show} = this.state
     const {afterShow} = this.props
-    let {placeholder} = this.state
+
+    const placeholder = this.getTooltipPlaceholder(e)
+
     const delayTime = show ? 0 : parseInt(delayShow, 10)
     const eventTarget = e.currentTarget
 
     const updateState = () => {
-      if (typeof placeholder === 'string') placeholder = placeholder.trim()
       if (Array.isArray(placeholder) && placeholder.length > 0 || placeholder) {
         const isInvisible = !this.state.show
         this.setState({
