@@ -549,27 +549,14 @@ var ReactTooltip = (0, _staticMethods2.default)(_class = (0, _windowListener2.de
       target.removeEventListener('mousemove', this.updateTooltip);
       target.removeEventListener('mouseleave', this.hideTooltip);
     }
-
-    /**
-     * When mouse enter, show the tooltip
-     */
-
   }, {
-    key: 'showTooltip',
-    value: function showTooltip(e, isGlobalCall) {
-      var _this5 = this;
-
-      var disabled = e.currentTarget.getAttribute('data-tip-disable') ? e.currentTarget.getAttribute('data-tip-disable') === 'true' : this.props.disable || false;
-      if (disabled) return;
-
-      if (isGlobalCall) {
-        // Don't trigger other elements belongs to other ReactTooltip
-        var targetArray = this.getTargetArray(this.props.id);
-        var isMyElement = targetArray.some(function (ele) {
-          return ele === e.currentTarget;
-        });
-        if (!isMyElement || this.state.show) return;
-      }
+    key: 'isTooltipDisabled',
+    value: function isTooltipDisabled(e) {
+      return e.currentTarget.getAttribute('data-tip-disable') ? e.currentTarget.getAttribute('data-tip-disable') === 'true' : this.props.disable || false;
+    }
+  }, {
+    key: 'getTooltipPlaceholder',
+    value: function getTooltipPlaceholder(e) {
       // Get the tooltip content
       // calculate in this phrase so that tip width height can be detected
       var _props3 = this.props;
@@ -577,8 +564,9 @@ var ReactTooltip = (0, _staticMethods2.default)(_class = (0, _windowListener2.de
       var multiline = _props3.multiline;
       var getContent = _props3.getContent;
 
-      var originTooltip = e.currentTarget.getAttribute('data-tip');
-      var isMultiline = e.currentTarget.getAttribute('data-multiline') || multiline || false;
+      var target = e.currentTarget || e.target;
+      var originTooltip = target.getAttribute('data-tip');
+      var isMultiline = target.getAttribute('data-multiline') || multiline || false;
 
       // Generate tootlip content
       var content = children;
@@ -589,7 +577,30 @@ var ReactTooltip = (0, _staticMethods2.default)(_class = (0, _windowListener2.de
           content = getContent();
         }
       }
-      var placeholder = (0, _getTipContent2.default)(originTooltip, content, isMultiline);
+      return (0, _getTipContent2.default)(originTooltip, content, isMultiline);
+    }
+
+    /**
+     * When mouse enter, show the tooltip
+     */
+
+  }, {
+    key: 'showTooltip',
+    value: function showTooltip(e, isGlobalCall) {
+      var _this5 = this;
+
+      if (this.isTooltipDisabled(e)) return;
+
+      if (isGlobalCall) {
+        // Don't trigger other elements belongs to other ReactTooltip
+        var targetArray = this.getTargetArray(this.props.id);
+        var isMyElement = targetArray.some(function (ele) {
+          return ele === e.currentTarget;
+        });
+        if (!isMyElement) return;
+      }
+
+      var placeholder = this.getTooltipPlaceholder(e);
 
       // If it is focus event or called by ReactTooltip.show, switch to `solid` effect
       var switchToSolid = e instanceof window.FocusEvent || isGlobalCall;
@@ -618,12 +629,12 @@ var ReactTooltip = (0, _staticMethods2.default)(_class = (0, _windowListener2.de
         if (scrollHide) _this5.addScrollListener(e);
         _this5.updateTooltip(e);
 
+        var getContent = _this5.props.getContent;
+
         if (getContent && Array.isArray(getContent)) {
           _this5.intervalUpdateContent = setInterval(function () {
             if (_this5.mount) {
-              var _getContent = _this5.props.getContent;
-
-              var _placeholder = (0, _getTipContent2.default)(originTooltip, _getContent[0](), isMultiline);
+              var _placeholder = _this5.getTooltipPlaceholder(e);
               _this5.setState({
                 placeholder: _placeholder
               });
@@ -642,17 +653,20 @@ var ReactTooltip = (0, _staticMethods2.default)(_class = (0, _windowListener2.de
     value: function updateTooltip(e) {
       var _this6 = this;
 
+      if (this.isTooltipDisabled(e)) return;
+
       var _state = this.state;
       var delayShow = _state.delayShow;
       var show = _state.show;
       var afterShow = this.props.afterShow;
-      var placeholder = this.state.placeholder;
+
+
+      var placeholder = this.getTooltipPlaceholder(e);
 
       var delayTime = show ? 0 : parseInt(delayShow, 10);
       var eventTarget = e.currentTarget;
 
       var updateState = function updateState() {
-        if (typeof placeholder === 'string') placeholder = placeholder.trim();
         if (Array.isArray(placeholder) && placeholder.length > 0 || placeholder) {
           (function () {
             var isInvisible = !_this6.state.show;
